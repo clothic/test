@@ -1,10 +1,7 @@
-const MeetingHistory = require('../../model/schema/meeting')
 const mongoose = require('mongoose');
 const User = require('../../model/schema/user');
-const Contact = require('../../model/schema/contact');
-const Lead = require('../../model/schema/lead');
+const MeetingHistory = require('../../model/schema/meeting')
 
-// Create a new meeting
 const add = async (req, res) => {
     try {
         const meeting = new MeetingHistory(req.body);
@@ -16,7 +13,6 @@ const add = async (req, res) => {
     }
 }
 
-// Get all meetings with optional filtering
 const index = async (req, res) => {
     try {
         const query = { ...req.query, deleted: false };
@@ -24,14 +20,23 @@ const index = async (req, res) => {
         // Fetch meetings with populated references
         const meetings = await MeetingHistory.find(query)
             .populate('createBy', 'firstName lastName username')
-            .populate('attendes', 'firstName lastName')
-            .populate('attendesLead', 'leadName')
+            .populate({
+                path: 'attendes',
+                model: 'Contacts',
+                select: 'firstName lastName'
+            })
+            .populate({
+                path: 'attendesLead',
+                model: 'Leads',
+                select: 'leadName'
+            })
             .sort({ timestamp: -1 });
 
-        // Format the response data
         const formattedMeetings = meetings.map(meeting => {
+            const meetingObj = meeting.toObject();
+
             return {
-                ...meeting._doc,
+                ...meetingObj,
                 createdByName: meeting.createBy ? `${meeting.createBy.firstName} ${meeting.createBy.lastName}` : 'Unknown',
                 timestamp: new Date(meeting.timestamp).toLocaleString()
             };
@@ -52,14 +57,27 @@ const view = async (req, res) => {
             deleted: false
         })
             .populate('createBy', 'firstName lastName username')
-            .populate('attendes', 'firstName lastName email phoneNumber')
-            .populate('attendesLead', 'leadName email phoneNumber');
+            .populate({
+                path: 'attendes',
+                model: 'Contacts',
+                select: 'firstName lastName email phoneNumber'
+            })
+            .populate({
+                path: 'attendesLead',
+                model: 'Leads',
+                select: 'leadName email phoneNumber'
+            });
 
         if (!meeting) {
             return res.status(404).json({ message: "Meeting not found" });
         }
 
-        res.status(200).json(meeting);
+        const meetingObj = meeting.toObject();
+
+        meetingObj.createdByName = meeting.createBy ? `${meeting.createBy.firstName} ${meeting.createBy.lastName}` : 'Unknown';
+        meetingObj.timestamp = new Date(meeting.timestamp).toLocaleString();
+
+        res.status(200).json(meetingObj);
     } catch (error) {
         console.error("Error fetching meeting:", error);
         res.status(500).json({ error: "Failed to fetch meeting" });

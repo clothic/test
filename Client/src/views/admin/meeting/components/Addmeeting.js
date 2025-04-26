@@ -43,21 +43,53 @@ const AddMeeting = (props) => {
         initialValues: initialValues,
         validationSchema: MeetingSchema,
         onSubmit: (values, { resetForm }) => {
-            
+            AddData();
         },
     });
-    const { errors, touched, values, handleBlur, handleChange, handleSubmit, setFieldValue } = formik
+    const { errors, touched, values, handleBlur, handleChange, handleSubmit, setFieldValue, resetForm } = formik
 
     const AddData = async () => {
-
+        try {
+            setIsLoding(true);
+            let response = await postApi('api/meeting', values);
+            if (response.status === 200) {
+                toast.success("Meeting added successfully");
+                resetForm();
+                onClose();
+                setAction((prev) => !prev);
+            } else {
+                toast.error(response.response.data?.message || "Failed to add meeting");
+            }
+        } catch (error) {
+            console.error("Error adding meeting:", error);
+            toast.error("Something went wrong");
+        } finally {
+            setIsLoding(false);
+        }
     };
 
     const fetchAllData = async () => {
-        
+        try {
+            if (values.related === "Contact") {
+                const response = await getApi('api/contact');
+                if (response.status === 200) {
+                    setContactData(response.data);
+                }
+            } else if (values.related === "Lead") {
+                const response = await getApi('api/lead');
+                if (response.status === 200) {
+                    setLeadData(response.data);
+                }
+            }
+        } catch (error) {
+            console.error("Error fetching data:", error);
+        }
     }
 
     useEffect(() => {
-
+        if (values.related) {
+            fetchAllData();
+        }
     }, [props.id, values.related])
 
     const extractLabels = (selectedItems) => {

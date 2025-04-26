@@ -28,9 +28,18 @@ const View = () => {
 
     const fetchData = async () => {
         setIsLoding(true)
-        let response = await getApi('api/meeting/view/', param.id)
-        setData(response?.data);
-        setIsLoding(false)
+        try {
+            let response = await getApi(`api/meeting/${param.id}`)
+            if (response.status === 200) {
+                setData(response.data);
+            } else {
+                console.error("Failed to fetch meeting data");
+            }
+        } catch (error) {
+            console.error("Error fetching meeting:", error);
+        } finally {
+            setIsLoding(false)
+        }
     }
 
     useEffect(() => {
@@ -66,13 +75,13 @@ const View = () => {
     const handleDeleteMeeting = async (ids) => {
         try {
             setIsLoding(true)
-            let response = await deleteApi('api/meeting/delete/', params.id)
+            let response = await deleteApi('api/meeting/', params.id)
             if (response.status === 200) {
                 setDeleteMany(false)
                 navigate(-1)
             }
         } catch (error) {
-            console.log(error)
+            console.error("Error deleting meeting:", error)
         }
         finally {
             setIsLoding(false)

@@ -161,14 +161,12 @@ const login = async (req, res) => {
             res.status(401).json({ error: 'Authentication failed, invalid username' });
             return;
         }
-        console.log("username exists");
         // Compare the provided password with the hashed password stored in the database
         const passwordMatch = await bcrypt.compare(password, user.password);
         if (!passwordMatch) {
             res.status(401).json({ error: 'Authentication failed,password does not match' });
             return;
         }
-        console.log("password matches");
         // Create a JWT token
         const token = jwt.sign({ userId: user._id }, 'secret_key', { expiresIn: '1d' });
 
